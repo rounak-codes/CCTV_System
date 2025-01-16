@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intruder Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .camera-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 25px;
+        }
+
+        .camera {
+            width: 40%;
+            margin-bottom: 20px;
+            text-align: center;
+            position: relative;
+            border: 2px solid #ccc;
+        }
+
+        .camera img {
+            width: 100%;
+            height: auto;
+        }
+
+        .no-feed {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: red;
+            font-size: 2em;
+            font-weight: bold;
+            display: none;
+        }
+
+        h2 {
+            margin-top: 10px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Intruder Detection System</h1>
+
+    <div class="camera-container">
+        <div class="camera">
+            <h2>Camera 1</h2>
+            <img id="videoStream0" src="/video_feed/0" onerror="showNoFeed(0)">
+            <div class="no-feed" id="noFeed0">No feed available</div>
+        </div>
+        <div class="camera">
+            <h2>Camera 2</h2>
+            <img id="videoStream1" src="/video_feed/1" onerror="showNoFeed(1)">
+            <div class="no-feed" id="noFeed1">No feed available</div>
+        </div>
+        <div class="camera">
+            <h2>Camera 3</h2>
+            <img id="videoStream2" src="/video_feed/2" onerror="showNoFeed(2)">
+            <div class="no-feed" id="noFeed2">No feed available</div>
+        </div>
+        <div class="camera">
+            <h2>Camera 4</h2>
+            <img id="videoStream3" src="/video_feed/3" onerror="showNoFeed(3)">
+            <div class="no-feed" id="noFeed3">No feed available</div>
+        </div>
+    </div>
+
+    <script>
+        function showNoFeed(cameraId) {
+            document.getElementById(`noFeed${cameraId}`).style.display = 'block';
+        }
+    </script>
+</body>
+</html>

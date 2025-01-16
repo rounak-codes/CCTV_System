@@ -1,0 +1,38 @@
+# Ignore the virtual environment directory
+venv/
+
+# Ignore Python bytecode files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore Windows system files
+Thumbs.db
+
+# Ignore IDE/editor specific files
+.idea/
+.vscode/
+
+# Ignore environment configuration files
+.env
+*.env
+
+# Ignore log files
+*.log
+
+# Ignore coverage reports
+.coverage
+coverage.xml
+*.cover
+
+# Ignore test result files
+nosetests.xml
+test-*.xml
+
+runs/
+datasets/
+data.yaml
