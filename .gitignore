@@ -32,7 +32,6 @@ coverage.xml
 # Ignore test result files
 nosetests.xml
 test-*.xml
-
 runs/
 datasets/
 data.yaml
