@@ -4,15 +4,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Play Recording</title>
+    <style>
+        /* Center the video player horizontally and vertically */
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0; /* Optional: Set a background color */
+            font-family: Arial, sans-serif; /* Change font for readability */
+        }
+
+        .container {
+            text-align: center;
+            width: 90%; /* Ensure the content doesn't overflow */
+            max-width: 800px;
+        }
+
+        h1 {
+            font-size: 1.5rem; /* Make the title smaller */
+            color: #333; /* Dark color for better contrast */
+            margin-bottom: 20px;
+            word-wrap: break-word; /* Wrap long filenames */
+        }
+
+        .video-player {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000; /* Optional: Set a background color for the video frame */
+            padding: 10px; /* Optional: Add padding around the video */
+            margin-bottom: 20px; /* Space between video and button */
+        }
+
+        video {
+            max-width: 100%; /* Ensure the video doesn't overflow */
+            max-height: 80vh; /* Limit the height of the video */
+        }
+
+        button {
+            position: relative;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Optional: Adjust file name style for better readability */
+        .filename {
+            display: block;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #333;
+            text-overflow: ellipsis; /* Prevent overflow with "..." */
+            white-space: nowrap;
+            overflow: hidden;
+            max-width: 100%;
+            margin: 10px 0;
+        }
+    </style>
 </head>
 <body>
-    <h1>Play Recording: {{ filename }}</h1>
-    <div class="video-player">
-        <video controls>
-            <source src="{{ url_for('static', filename='recordings/' + filename) }}" type="video/avi">
-            Your browser does not support the video tag.
-        </video>
+    <div class="container">
+        <h1>Play Recording</h1>
+        <p class="filename">{{ filename }}</p> <!-- Display the filename here -->
+        <div class="video-player">
+            <video controls>
+                <source src="{{ url_for('static', filename='recordings/' + filename) }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <button onclick="window.history.back()">Back</button>
     </div>
-    <button onclick="window.history.back()">Back</button>
 </body>
 </html>

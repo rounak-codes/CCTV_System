@@ -92,22 +92,42 @@ def get_rounded_timestamp():
     return now.replace(second=0, microsecond=0)
 
 # Frame generation for video feed
+import subprocess
+import cv2
+import numpy as np
+from datetime import datetime
+
 def generate_frames(camera_id):
     last_logged_minute = None  # To track the last logged minute
 
     # Setup video recording
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Timestamp for the video filename
-    video_filename = f"recordings/camera_{camera_id}_{timestamp}.avi"
+    video_filename = f"static/recordings/camera_{camera_id}_{timestamp}.mp4"
     
-    # Create VideoWriter object
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Codec for .mp4 format
-    video_writer = cv2.VideoWriter(video_filename, fourcc, 20.0, (640, 480))  # Adjust resolution if needed
+    # Define FFmpeg command for encoding
+    ffmpeg_command = [
+        'ffmpeg',
+        '-y',  # Overwrite output files without asking
+        '-f', 'rawvideo',  # Input format
+        '-vcodec', 'rawvideo',  # Input codec
+        '-pix_fmt', 'bgr24',  # Pixel format (OpenCV uses bgr24)
+        '-s', '640x480',  # Resolution (same as the video frame size)
+        '-r', '25',  # Frame rate
+        '-i', '-',  # Input from stdin (pipe)
+        '-c:v', 'libx264',  # H.264 codec for output
+        '-preset', 'fast',  # Encoding speed/quality trade-off
+        '-crf', '23',  # Constant rate factor for quality (lower is better)
+        video_filename  # Output file
+    ]
+    
+    # Open a subprocess for FFmpeg to handle video encoding
+    process = subprocess.Popen(ffmpeg_command, stdin=subprocess.PIPE)
 
     while True:
         # Check if the camera exists
         if camera_id >= len(cameras):
             frame = 255 * np.ones(shape=[480, 640, 3], dtype=np.uint8)  # Blank frame if camera is unavailable
-            video_writer.write(frame)
+            process.stdin.write(frame.tobytes())
             continue
 
         ret, frame = cameras[camera_id].read()
@@ -119,7 +139,7 @@ def generate_frames(camera_id):
             if cameras[camera_id] is None:
                 # If reconnection fails, record a blank frame
                 frame = 255 * np.ones(shape=[480, 640, 3], dtype=np.uint8)
-                video_writer.write(frame)  # Write the blank frame
+                process.stdin.write(frame.tobytes())  # Write the blank frame
                 continue
 
         # Perform object detection (YOLO and Custom Model)
@@ -183,8 +203,8 @@ def generate_frames(camera_id):
         # Overlay the current time on the frame
         cv2.putText(frame, f"Time: {current_time}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
 
-        # Write the frame to the video file
-        video_writer.write(frame)
+        # Write the frame to FFmpeg process
+        process.stdin.write(frame.tobytes())
 
         # Yield the frame for streaming
         ret, buffer = cv2.imencode('.jpg', frame)
@@ -194,7 +214,8 @@ def generate_frames(camera_id):
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
     # Release the VideoWriter after finishing the video
-    video_writer.release()
+    process.stdin.close()
+    process.wait()
 
 @app.route('/')
 def index():
@@ -215,15 +236,26 @@ def video_feed(camera_id):
 
     return Response(generate_frames(camera_id), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+import os
+
 @app.route('/recordings')
 def recordings():
-    files = [f for f in os.listdir('recordings') if f.endswith('.avi')]
-    return render_template('recordings.html', files=files)
+    files = [f for f in os.listdir('static/recordings') if f.endswith('.mp4')]
+    files_with_times = [(f, os.path.getmtime(os.path.join('static/recordings', f))) for f in files]
+    files_with_times.sort(key=lambda x: x[1], reverse=True)
+    files_to_display = [f[0] for f in files_with_times[1:]]
+    
+    return render_template('recordings.html', files=files_to_display)
 
 # Route to play selected recording
 @app.route('/play/<filename>')
 def play_recording(filename):
     return render_template('play.html', filename=filename)
+
+# Serve video files from the recordings folder
+@app.route('/static/recordings/<filename>')
+def serve_recording(filename):
+    return send_from_directory('static/recordings', filename)
 
 @app.route('/shutdown_server', methods=['POST'])
 def shutdown_server():
@@ -237,8 +269,8 @@ def shutdown_server():
 
 if __name__ == "__main__":
     # Create the recordings directory if it doesn't exist
-    if not os.path.exists('recordings'):
-        os.makedirs('recordings')
+    if not os.path.exists('static/recordings'):
+        os.makedirs('static/recordings')
 
     # Initialize cameras before running the app
     initialize_cameras()
