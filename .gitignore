@@ -36,3 +36,4 @@ test-*.xml
 runs/
 datasets/
 data.yaml
+known_faces/
