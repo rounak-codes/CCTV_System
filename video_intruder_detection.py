@@ -71,7 +71,6 @@ def initialize_cameras():
         if not cap.isOpened():
             print(f"Failed to open camera at index {index}.")
             continue
-        cap.set(cv2.CAP_PROP_FPS, 25)
         cameras.append(cap)
     
     return cameras
@@ -102,7 +101,7 @@ def generate_frames(camera_id):
     
     # Create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Codec for .mp4 format
-    video_writer = cv2.VideoWriter(video_filename, fourcc, 25.0, (640, 480))  # Adjust resolution if needed
+    video_writer = cv2.VideoWriter(video_filename, fourcc, 20.0, (640, 480))  # Adjust resolution if needed
 
     while True:
         # Check if the camera exists
