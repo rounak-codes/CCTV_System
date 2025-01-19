@@ -2,9 +2,9 @@ import torch
 from ultralytics import YOLO
 
 def main():
-    model = YOLO('yolo11n.pt')  # Load the YOLO model
+    model = YOLO('yolo11x.pt')  # Load the YOLO model
     model.train(
-        data='datasets/violenceprediction/data.yaml',  # Path to the YAML file
+        data='datasets/weaponsdetection/data.yaml',  # Path to the YAML file
         epochs=100,  # Number of training epochs
         imgsz=64,  # Image size
     )

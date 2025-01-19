@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play Recording</title>
+</head>
+<body>
+    <h1>Play Recording: {{ filename }}</h1>
+    <div class="video-player">
+        <video controls>
+            <source src="{{ url_for('static', filename='recordings/' + filename) }}" type="video/avi">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    <button onclick="window.history.back()">Back</button>
+</body>
+</html>

@@ -5,13 +5,75 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Intruder Detection</title>
     <style>
+        /* Basic Styles */
         body {
             font-family: Arial, sans-serif;
+            display: flex;
+            margin: 0;
+            padding: 0;
         }
 
         h1 {
             text-align: center;
             margin-top: 20px;
+            flex: 1;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 250px;
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            height: 100vh;
+            position: fixed;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #444;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .sidebar a:hover {
+            background-color: #555;
+        }
+
+        .sidebar h2 {
+            display: block;
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        .close-button {
+            display: block;
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 1.2em;
+            background-color: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        /* Content Styles */
+        .content {
+            margin-left: 250px;
+            padding: 20px;
+            width: calc(100% - 250px);
+            transition: margin-left 0.3s ease;
+        }
+
+        .content.collapsed {
+            margin-left: 60px;
+            width: calc(100% - 60px);
         }
 
         .camera-container {
@@ -45,42 +107,136 @@
             display: none;
         }
 
-        h2 {
-            margin-top: 10px;
-            font-size: 1.2em;
+        /* Toggle Button */
+        .toggle-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.5em;
+            color: white;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;  /* Hidden by default */
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);  /* Black w/ opacity */
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 1em;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <h1>Intruder Detection System</h1>
-
-    <div class="camera-container">
-        <div class="camera">
-            <h2>Camera 1</h2>
-            <img id="videoStream0" src="/video_feed/0" onerror="showNoFeed(0)">
-            <div class="no-feed" id="noFeed0">No feed available</div>
-        </div>
-        <div class="camera">
-            <h2>Camera 2</h2>
-            <img id="videoStream1" src="/video_feed/1" onerror="showNoFeed(1)">
-            <div class="no-feed" id="noFeed1">No feed available</div>
-        </div>
-        <div class="camera">
-            <h2>Camera 3</h2>
-            <img id="videoStream2" src="/video_feed/2" onerror="showNoFeed(2)">
-            <div class="no-feed" id="noFeed2">No feed available</div>
-        </div>
-        <div class="camera">
-            <h2>Camera 4</h2>
-            <img id="videoStream3" src="/video_feed/3" onerror="showNoFeed(3)">
-            <div class="no-feed" id="noFeed3">No feed available</div>
-        </div>
+    <div class="sidebar" id="sidebar">
+        <h2>Dashboard</h2>
+        <a href="/">Restart Feed</a>
+        <a href="/recordings" target="_blank">View Recordings</a>
+        <button class="close-button" onclick="closeApp()">Close System</button>
     </div>
 
+    <div class="content" id="content">
+        <h1>Intruder Detection System</h1>
+        <div class="camera-container">
+            <div class="camera">
+                <h2>Camera 1</h2>
+                <img id="videoStream0" src="/video_feed/0" onerror="showNoFeed(0)">
+                <div class="no-feed" id="noFeed0">No feed available</div>
+            </div>
+            <div class="camera">
+                <h2>Camera 2</h2>
+                <img id="videoStream1" src="/video_feed/1" onerror="showNoFeed(1)">
+                <div class="no-feed" id="noFeed1">No feed available</div>
+            </div>
+        </div>
+        {% block content %}
+        {% endblock %}
+    </div>
+    <!-- Custom Alert Modal -->
+    <div id="customAlert" class="modal">
+        <div class="modal-content">
+            <h2>Alert</h2>
+            <p id="alertMessage">Are you sure you want to close the system?</p>
+            <button id="confirmBtn">Yes</button>
+            <button id="cancelBtn">Cancel</button>
+        </div>
+    </div>
     <script>
         function showNoFeed(cameraId) {
-            document.getElementById(`noFeed${cameraId}`).style.display = 'block';
+            var noFeedElement = document.getElementById(`noFeed${cameraId}`);
+            if (noFeedElement) {
+                noFeedElement.style.display = 'block';
+            }
         }
+
+        function toggleSidebar() {
+            var sidebar = document.getElementById('sidebar');
+            var content = document.getElementById('content');
+            sidebar.classList.toggle('collapsed');
+            content.classList.toggle('collapsed');
+        }
+
+        function closeApp() {
+            showCustomAlert("Are you sure you want to close the system?", function(isConfirmed) {
+                if (isConfirmed) {
+                    window.location.href = 'about:blank';  // Redirect before shutdown
+                    // Perform shutdown logic
+                    fetch('/shutdown_server', { method: 'POST' })
+                        .then(response => {
+                            if (response.ok) {
+                                // Server should shut down now
+                                console.log("Server shutting down...");
+                            }
+                        })
+                        .catch(err => {
+                            console.error("Error during shutdown:", err);
+                        });
+                } else {
+                    console.log("Shutdown cancelled.");
+                }
+            });
+        }        
+        
+        function showCustomAlert(message, callback) {
+            var modal = document.getElementById('customAlert');
+            var messageElement = document.getElementById('alertMessage');
+            var confirmBtn = document.getElementById('confirmBtn');
+            var cancelBtn = document.getElementById('cancelBtn');
+        
+            // Show the modal and set the message
+            modal.style.display = "block";
+            messageElement.textContent = message;
+        
+            // Set up button actions
+            confirmBtn.onclick = function() {
+                modal.style.display = "none";
+                callback(true);
+            };
+            cancelBtn.onclick = function() {
+                modal.style.display = "none";
+                callback(false);
+            };
+        }                        
+        
     </script>
 </body>
 </html>

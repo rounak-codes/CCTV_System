@@ -1,9 +1,11 @@
 import os
+import signal
 import cv2
 import numpy as np
-from flask import Flask, Response, render_template
+from flask import Flask, Response, render_template, request, send_from_directory
 from ultralytics import YOLO
 from datetime import datetime
+from time import sleep
 
 os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
 
@@ -35,13 +37,15 @@ custom_classes = {
 # Combine both YOLO and custom model classes
 combined_classes = {**yolo_classes, **custom_classes}
 
+cameras = []
+
 # Global list to store camera indices
 camera_indexes = []
 
 # Function to find available camera indices
 def get_camera_indices():
     available_cameras = []
-    for i in range(10):  # Try indices from 0 to 9
+    for i in range(3):  # Check the first 3 camera indices
         cap = cv2.VideoCapture(i)
         if cap.isOpened():
             available_cameras.append(i)
@@ -50,6 +54,7 @@ def get_camera_indices():
 
 # Initialize camera connections
 def initialize_cameras():
+    global cameras
     global camera_indexes
 
     # Get the list of available camera indices
@@ -61,11 +66,11 @@ def initialize_cameras():
 
     # Initialize VideoCapture objects for available cameras
     cameras = []
-    for index in camera_indexes:  # Initialize all detected cameras, even if it's just one
+    for index in camera_indexes:  # Initialize all detected cameras
         cap = cv2.VideoCapture(index)
         if not cap.isOpened():
             print(f"Failed to open camera at index {index}.")
-            return None
+            continue
         cameras.append(cap)
     
     return cameras
@@ -87,9 +92,24 @@ def get_rounded_timestamp():
     return now.replace(second=0, microsecond=0)
 
 # Frame generation for video feed
-def generate_frames(camera_id, cameras):
+def generate_frames(camera_id):
     last_logged_minute = None  # To track the last logged minute
+
+    # Setup video recording
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Timestamp for the video filename
+    video_filename = f"recordings/camera_{camera_id}_{timestamp}.avi"
+    
+    # Create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Codec for .mp4 format
+    video_writer = cv2.VideoWriter(video_filename, fourcc, 20.0, (640, 480))  # Adjust resolution if needed
+
     while True:
+        # Check if the camera exists
+        if camera_id >= len(cameras):
+            frame = 255 * np.ones(shape=[480, 640, 3], dtype=np.uint8)  # Blank frame if camera is unavailable
+            video_writer.write(frame)
+            continue
+
         ret, frame = cameras[camera_id].read()
 
         if not ret:
@@ -97,13 +117,9 @@ def generate_frames(camera_id, cameras):
             print(f"Camera {camera_id} is disconnected. Attempting reconnection...")
             cameras[camera_id] = reconnect_camera(camera_id)
             if cameras[camera_id] is None:
-                # If reconnection fails, return an error response
+                # If reconnection fails, record a blank frame
                 frame = 255 * np.ones(shape=[480, 640, 3], dtype=np.uint8)
-                cv2.putText(frame, "No feed available", (150, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                ret, buffer = cv2.imencode('.jpg', frame)
-                frame = buffer.tobytes()
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                video_writer.write(frame)  # Write the blank frame
                 continue
 
         # Perform object detection (YOLO and Custom Model)
@@ -148,7 +164,7 @@ def generate_frames(camera_id, cameras):
                 cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
                 cv2.putText(frame, f"{label} {confidence:.2f}%", (x1, y1 - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-            
+
             # Visual alert for detection
             alert_message = f"ALERT!! (Camera {camera_id})"
             cv2.putText(frame, alert_message, (100, 50),
@@ -167,12 +183,18 @@ def generate_frames(camera_id, cameras):
         # Overlay the current time on the frame
         cv2.putText(frame, f"Time: {current_time}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
 
-        # Encode frame as JPEG
+        # Write the frame to the video file
+        video_writer.write(frame)
+
+        # Yield the frame for streaming
         ret, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
 
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+    # Release the VideoWriter after finishing the video
+    video_writer.release()
 
 @app.route('/')
 def index():
@@ -182,7 +204,6 @@ def index():
 @app.route('/video_feed/<int:camera_id>')
 def video_feed(camera_id):
     # Initialize cameras on the first request
-    global cameras
     if not hasattr(video_feed, "cameras"):
         cameras = initialize_cameras()
         if cameras is None:
@@ -192,8 +213,33 @@ def video_feed(camera_id):
     if camera_id >= len(cameras):
         return "Error: Camera ID out of range", 400
 
-    return Response(generate_frames(camera_id, cameras), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(generate_frames(camera_id), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/recordings')
+def recordings():
+    files = [f for f in os.listdir('recordings') if f.endswith('.avi')]
+    return render_template('recordings.html', files=files)
+
+# Route to play selected recording
+@app.route('/play/<filename>')
+def play_recording(filename):
+    return render_template('play.html', filename=filename)
+
+@app.route('/shutdown_server', methods=['POST'])
+def shutdown_server():
+    # Stop camera feeds
+    for camera in cameras:
+        camera.release()
+    sleep(1)
+    os.kill(os.getpid(), signal.SIGINT)   
+    return '', 200
 
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    # Create the recordings directory if it doesn't exist
+    if not os.path.exists('recordings'):
+        os.makedirs('recordings')
+
+    # Initialize cameras before running the app
+    initialize_cameras()
+    app.run(debug=True, host="0.0.0.0", port=5000)

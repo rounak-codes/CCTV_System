@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recordings</title>
+</head>
+<body>
+    <h1>Recordings</h1>
+    <ul>
+        {% for file in files %}
+            <li><a href="/play/{{ file }}">{{ file }}</a></li>
+        {% endfor %}
+    </ul>
+    <button onclick="window.history.back()">Back</button>
+</body>
+</html>
