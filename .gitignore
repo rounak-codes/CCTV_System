@@ -31,6 +31,7 @@ coverage.xml
 
 # Ignore test result files
 nosetests.xml
+detection_log.txt
 test-*.xml
 runs/
 datasets/
