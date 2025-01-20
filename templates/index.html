@@ -105,6 +105,7 @@
             font-size: 2em;
             font-weight: bold;
             display: none;
+            z-index: 10;
         }
 
         /* Toggle Button */
@@ -158,12 +159,12 @@
         <h1>Intruder Detection System</h1>
         <div class="camera-container">
             <div class="camera">
-                <h2>Camera 1</h2>
+                <h2>Camera 0</h2>
                 <img id="videoStream0" src="/video_feed/0" onerror="showNoFeed(0)">
                 <div class="no-feed" id="noFeed0">No feed available</div>
             </div>
             <div class="camera">
-                <h2>Camera 2</h2>
+                <h2>Camera 1</h2>
                 <img id="videoStream1" src="/video_feed/1" onerror="showNoFeed(1)">
                 <div class="no-feed" id="noFeed1">No feed available</div>
             </div>
@@ -183,10 +184,15 @@
     <script>
         function showNoFeed(cameraId) {
             var noFeedElement = document.getElementById(`noFeed${cameraId}`);
-            if (noFeedElement) {
-                noFeedElement.style.display = 'block';
+            var videoElement = document.getElementById(`videoStream${cameraId}`);
+            
+            // If the video feed is not available, display the 'no feed' message
+            if (noFeedElement && videoElement) {
+                videoElement.style.display = 'none';  // Hide the video feed
+                noFeedElement.style.display = 'block';  // Show the 'No feed available' message
             }
         }
+        
 
         function toggleSidebar() {
             var sidebar = document.getElementById('sidebar');
