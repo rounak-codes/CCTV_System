@@ -224,8 +224,6 @@ def video_feed(camera_id):
 
     return Response(generate_frames(camera_id), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-import os
-
 @app.route('/recordings')
 def recordings():
     files = [f for f in os.listdir('static/recordings') if f.endswith('.mp4')]
@@ -244,6 +242,25 @@ def play_recording(filename):
 @app.route('/static/recordings/<filename>')
 def serve_recording(filename):
     return send_from_directory('static/recordings', filename)
+
+@app.route('/logs')
+def read_logs():
+    log_entries = []
+    with open("detection_log.txt", "r") as file:
+        for line in file:
+            # Parse each line into timestamp, message, and camera
+            parts = line.strip().split(" - ")
+            if len(parts) == 2:
+                timestamp, message = parts
+                camera = message.split("(")[-1].replace(")", "").strip()  # Extract camera info
+                log_message = message.split("(")[0].strip()  # Extract log message
+                log_entries.append({
+                    "timestamp": timestamp,
+                    "log_message": log_message,
+                    "camera": camera
+                })
+    return log_entries
+
 
 @app.route('/shutdown_server', methods=['POST'])
 def shutdown_server():
