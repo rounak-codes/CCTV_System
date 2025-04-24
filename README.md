@@ -17,6 +17,10 @@ This project is an intruder detection system that uses YOLO (You Only Look Once)
 - Ultralitycs YOLO
 - NumPy
 
+## Screenshots
+
+![1](images/1.png) ![2](images/2.png)
+
 ## Setup
 
 ### 1. Clone the repository
