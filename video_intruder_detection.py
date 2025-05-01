@@ -15,8 +15,8 @@ os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
 app = Flask(__name__)
 
 # Load the YOLO model
-yolo_model = YOLO("yolo11x.pt")
-custom_model = YOLO("yolocctvhandgun.pt")
+yolo_model = YOLO("yolo11s.pt")
+custom_model = YOLO("violenceprediction.pt")
 
 # Define harmful object classes for YOLO and the custom model
 yolo_classes = {
@@ -32,9 +32,15 @@ yolo_classes = {
 # Add offset to custom model classes to avoid collision with YOLO classes
 custom_classes_offset = 100  # Offset custom model class IDs by 100
 custom_classes = {
-    0 + custom_classes_offset: "handgun",
-    1 + custom_classes_offset: "knife",
-    2 + custom_classes_offset: "rifle",
+    0 + custom_classes_offset: "Grenade",
+    1 + custom_classes_offset: "Knife",
+    2 + custom_classes_offset: "Missile",
+    3 + custom_classes_offset: "Pistol",
+    4 + custom_classes_offset: "Rifle",
+    5 + custom_classes_offset: "armed man",
+    6 + custom_classes_offset: "body",
+    7 + custom_classes_offset: "face",
+    8 + custom_classes_offset: "hand",
 }
 
 # Combine both YOLO and custom model classes
@@ -159,12 +165,9 @@ def generate_frames(camera_id):
                     class_id = int(box.cls[0])             # Object class ID
                     confidence = box.conf[0] * 100         # Confidence score
 
-                    if class_id == 0 + custom_classes_offset:  # Handgun
-                        harmful_objects_detected.append((x1, y1, x2, y2, custom_classes[class_id], confidence))
-                    elif class_id == 1 + custom_classes_offset:  # Knife
-                        harmful_objects_detected.append((x1, y1, x2, y2, custom_classes[class_id], confidence))
-                    elif class_id == 2 + custom_classes_offset:  # Rifle
-                        harmful_objects_detected.append((x1, y1, x2, y2, custom_classes[class_id], confidence))
+                    if class_id + custom_classes_offset in custom_classes:
+                        label = custom_classes[class_id + custom_classes_offset]
+                        harmful_objects_detected.append((x1, y1, x2, y2, label, confidence))
 
             # If both a person and a harmful object are detected, trigger an alert
             if person_detected and harmful_objects_detected:
@@ -212,17 +215,36 @@ def index():
 
 @app.route('/video_feed/<int:camera_id>')
 def video_feed(camera_id):
-    # Initialize cameras on the first request
-    if not hasattr(video_feed, "cameras"):
-        cameras = initialize_cameras()
-        if cameras is None:
-            return "Error: Unable to initialize cameras", 500
+    global cameras
 
-    # Ensure the camera_id is valid
-    if camera_id >= len(cameras):
-        return "Error: Camera ID out of range", 400
+    available_indices = get_camera_indices()
+    for index in available_indices:
+        if index >= len(cameras) or not cameras[index].isOpened():
+            cap = cv2.VideoCapture(index)
+            if cap.isOpened():
+                if index < len(cameras):
+                    cameras[index] = cap
+                else:
+                    cameras.append(cap)
+
+    # Remove any cameras not in current available indices
+    cameras[:] = [cam for i, cam in enumerate(cameras) if i in available_indices]
+
+    if camera_id >= len(cameras) or not cameras[camera_id].isOpened():
+        return "Error: Camera ID out of range or not available", 400
 
     return Response(generate_frames(camera_id), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route('/refresh_cameras', methods=['POST'])
+def refresh_cameras():
+    global cameras
+    for cam in cameras:
+        cam.release()
+    cameras.clear()
+    initialize_cameras()
+    return "Cameras refreshed", 200
+
 
 @app.route('/recordings')
 def recordings():

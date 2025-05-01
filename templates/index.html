@@ -108,16 +108,16 @@
             z-index: 10;
         }
 
-        /* Toggle Button */
         .toggle-btn {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 1.5em;
+            display: block;
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 1.2em;
+            background-color: green;
             color: white;
-            background: transparent;
             border: none;
             cursor: pointer;
+            text-align: center;
         }
 
         .modal {
@@ -153,6 +153,7 @@
         <a href="/">Restart Feed</a>
         <a href="/recordings" target="_blank">View Recordings</a>
         <a href="/logs" target="_blank">View Logs</a>
+        <button class='toggle-btn' onclick="refreshCameras()">Refresh Cameras</button>
         <button class="close-button" onclick="closeApp()">Close System</button>
     </div>
 
@@ -244,6 +245,22 @@
             };
         }                        
         
+
+        function refreshCameras() {
+            fetch('/refresh_cameras', {
+                method: 'POST'
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert("Failed to refresh cameras.");
+                }
+            })
+            .catch(error => {
+                console.error("Error refreshing cameras:", error);
+            });
+        }        
     </script>
 </body>
 </html>
