@@ -16,7 +16,8 @@ app = Flask(__name__)
 
 # Load the YOLO model
 yolo_model = YOLO("yolo11s.pt")
-custom_model = YOLO("violenceprediction.pt")
+custom_model1 = YOLO("models/weaponsdata.pt")
+custom_model = YOLO("models/weaponsdetection.pt")
 
 # Define harmful object classes for YOLO and the custom model
 yolo_classes = {
@@ -29,22 +30,14 @@ yolo_classes = {
     76: "scissors",
 }
 
-# Add offset to custom model classes to avoid collision with YOLO classes
-custom_classes_offset = 100  # Offset custom model class IDs by 100
+
+custom_classes_offset = 200  # Offset custom model class IDs by 200
 custom_classes = {
-    0 + custom_classes_offset: "Grenade",
-    1 + custom_classes_offset: "Knife",
-    2 + custom_classes_offset: "Missile",
-    3 + custom_classes_offset: "Pistol",
-    4 + custom_classes_offset: "Rifle",
-    5 + custom_classes_offset: "armed man",
-    6 + custom_classes_offset: "body",
-    7 + custom_classes_offset: "face",
-    8 + custom_classes_offset: "hand",
+    0 + custom_classes_offset: "weapon",
 }
 
 # Combine both YOLO and custom model classes
-combined_classes = {**yolo_classes, **custom_classes}
+combined_classes = {**yolo_classes, **custom_classes, }
 
 cameras = []
 

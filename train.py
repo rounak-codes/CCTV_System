@@ -62,20 +62,13 @@ def main():
             "img_size": 416,
             "batch_size": 4
         },
-        '''{
-            "model_path": 'yolo11s.pt',  # Using the same base model
-            "data_path": 'datasets/weaponsdetection/data.yaml',
-            "epochs": 50,
-            "img_size": 416,
-            "batch_size": 4
-        },
         {
             "model_path": 'yolo11s.pt',  # Using the same base model
             "data_path": 'datasets/cctvhandgun/data.yaml',
             "epochs": 50,
             "img_size": 416,
             "batch_size": 4
-        },'''
+        }
     ]
     
     # Execute each training job sequentially
