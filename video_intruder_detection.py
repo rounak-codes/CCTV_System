@@ -16,14 +16,14 @@ app = Flask(__name__)
 
 # Load the YOLO model
 yolo_model = YOLO("yolo11s.pt")
-custom_model1 = YOLO("models/weaponsdata.pt")
+#custom_model1 = YOLO("models/weaponsdata.pt")
 custom_model = YOLO("models/weaponsdetection.pt")
 
 # Define harmful object classes for YOLO and the custom model
 yolo_classes = {
     0: "person",
     34: "baseball bat",
-    35: "baseball glove",
+    #35: "baseball glove",
     39: "bottle",
     42: "fork",
     43: "knife",
@@ -31,7 +31,7 @@ yolo_classes = {
 }
 
 
-custom_classes_offset = 200  # Offset custom model class IDs by 200
+custom_classes_offset = 100  # Offset custom model class IDs by 200
 custom_classes = {
     0 + custom_classes_offset: "weapon",
 }
